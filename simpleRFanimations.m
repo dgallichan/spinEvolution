@@ -12,8 +12,7 @@
 saveMovie = 0; % set to one to save out animation frames
 savedir='~/temp/mov'; % temporary folder to save animation frames to
 
-addpath export_fig
-addpath arrow
+addpath(genpath('tools'))
 
 %%% Hahn Echo:
 hahnopts.Angles = [90 90];
