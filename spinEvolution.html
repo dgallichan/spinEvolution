@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin Evolution Animation - No Dependencies</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            flex-direction: row;
+        }
+        .left-panel {
+            width: 350px;
+            flex-shrink: 0;
+        }
+        .right-panel {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+                border-radius: 5px;
+            }
+            .left-panel {
+                width: 100%;
+                order: 2;
+            }
+            .right-panel {
+                order: 1;
+            }
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .control-row button {
+                margin-bottom: 5px;
+            }
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .control-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #canvas3d {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+            width: 100%;
+            height: 70vh;
+            /* min-height: 400px;
+            max-height: 1200px; */
+        }
+        #signalChart {
+            border-radius: 5px;
+            margin-top: 20px;
+            width: 100%;
+            height: 25vh;
+        }
+        
+        /* Mobile canvas adjustments */
+        @media (max-width: 768px) {
+            #canvas3d {
+                height: 50vh;
+                min-height: 300px;
+                max-height: 500px;
+            }
+            #signalChart {
+                height: 20vh;
+                margin-top: 15px;
+            }
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            min-height: 44px; /* Touch-friendly minimum size */
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            width: 100%;
+            min-height: 44px; /* Touch-friendly minimum size */
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+        
+        /* Mobile button and input adjustments */
+        @media (max-width: 768px) {
+            button {
+                padding: 12px 20px;
+                font-size: 16px;
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            select {
+                padding: 12px;
+                font-size: 16px;
+            }
+            input[type="range"] {
+                height: 40px;
+                -webkit-appearance: none;
+                appearance: none;
+                background: transparent;
+                cursor: pointer;
+                width: 100%;
+            }
+            input[type="range"]::-webkit-slider-track {
+                background: #ddd;
+                height: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                height: 24px;
+                width: 24px;
+                border-radius: 50%;
+                background: #4CAF50;
+                cursor: pointer;
+                margin-top: -8px;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            input[type="range"]::-moz-range-track {
+                background: #ddd;
+                height: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+            }
+            input[type="range"]::-moz-range-thumb {
+                height: 24px;
+                width: 24px;
+                border-radius: 50%;
+                background: #4CAF50;
+                cursor: pointer;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                margin-top: -8px;
+            }
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .status {
+            margin: 10px 0;
+            font-weight: bold;
+            color: #333;
+        }
+        .view-controls {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .view-controls label {
+            margin-right: 15px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        /* Mobile info and controls adjustments */
+        @media (max-width: 768px) {
+            .info {
+                margin-top: 15px;
+                padding: 10px;
+            }
+            .info h3 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            .info p {
+                font-size: 14px;
+                margin: 5px 0;
+            }
+            .view-controls {
+                margin: 8px 0;
+                padding: 8px;
+            }
+            .view-controls label {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+            h1 {
+                font-size: 24px;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h1>MRI Spin Evolution</h1>
+            
+            <div class="controls">
+                <div class="control-row">
+                    <select id="sequenceSelect">
+                        <option value="hahn">Hahn Echo</option>
+                        <option value="hahn_wide">Hahn Echo (Wide Dispersion)</option>
+                        <option value="spinecho">Spin Echo</option>
+                        <option value="spinecho_wide">Spin Echo (Wide Dispersion)</option>
+                        <option value="stimulated">Stimulated Echo</option>
+                    </select>
+                </div>
+                
+                <div class="control-row">
+                    <button id="playBtn">Play</button>
+                    <button id="pauseBtn" disabled>Pause</button>
+                    <button id="resetBtn">Reset</button>
+                </div>
+                
+                <div class="view-controls">
+                    <label>Speed: <input type="range" id="speedSlider" min="0.1" max="2" step="0.1" value="1" style="width: 100%;"></label>
+                </div>
+                
+                <div class="view-controls">
+                    <label>Time: <input type="range" id="timelineSlider" min="0" max="100" value="0" step="0.1" style="width: 100%;"> </label>
+                </div>
+                
+                <div class="view-controls">
+                    <label>View Angle: <input type="range" id="azimuthSlider" min="0" max="360" value="335" style="width: 100%;"></label>
+                </div>
+                
+                <div class="view-controls">
+                    <label>Elevation: <input type="range" id="elevationSlider" min="-90" max="90" value="40" style="width: 100%;"></label>
+                </div>
+                
+                <div class="view-controls">
+                    <label>Zoom: <input type="range" id="zoomSlider" min="20" max="500" value="300" style="width: 100%;"></label>
+                </div>
+            </div>
+            
+            <div class="status" id="status">Loading simulation...</div>
+            
+            <div class="info">
+                <h3>Current Sequence: <span id="currentSequence">Hahn Echo</span></h3>
+                <p id="sequenceInfo">90° pulse along x-axis, followed by 90° pulse along x-axis</p>
+                <p><strong>Time:</strong> <span id="currentTime">0.00</span> s | <strong>Frame:</strong> <span id="currentFrame">0</span></p>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <canvas id="canvas3d"></canvas>
+            <canvas id="signalChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Utility functions for rotation matrices
+        function rotx(theta) {
+            const th2 = theta * Math.PI / 180;
+            return [
+                [1, 0, 0],
+                [0, Math.cos(th2), Math.sin(th2)],
+                [0, -Math.sin(th2), Math.cos(th2)]
+            ];
+        }
+
+        function roty(theta) {
+            const th2 = theta * Math.PI / 180;
+            return [
+                [Math.cos(th2), 0, -Math.sin(th2)],
+                [0, 1, 0],
+                [Math.sin(th2), 0, Math.cos(th2)]
+            ];
+        }
+
+        function rotz(theta) {
+            const th2 = theta * Math.PI / 180;
+            return [
+                [Math.cos(th2), Math.sin(th2), 0],
+                [-Math.sin(th2), Math.cos(th2), 0],
+                [0, 0, 1]
+            ];
+        }
+
+        // Vector matrix multiplication
+        function matrixVectorMultiply(matrix, vector) {
+            const result = [0, 0, 0];
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    result[i] += matrix[i][j] * vector[j];
+                }
+            }
+            return result;
+        }
+
+        // Linear space
+        function linspace(start, stop, num) {
+            const arr = [];
+            const step = (stop - start) / (num - 1);
+            for (let i = 0; i < num; i++) {
+                arr.push(start + step * i);
+            }
+            return arr;
+        }
+
+        // Mean calculation
+        function mean(arr) {
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        // Enhanced 3D to 2D projection with interactive viewing
+        function project3D(x, y, z, azimuth = 37.5, elevation = 30) {
+            const azRad = (azimuth - 90) * Math.PI / 180;
+            const elRad = elevation * Math.PI / 180;
+            
+            // Rotation matrices
+            const cosAz = Math.cos(azRad);
+            const sinAz = Math.sin(azRad);
+            const cosEl = Math.cos(elRad);
+            const sinEl = Math.sin(elRad);
+            
+            // Apply rotations
+            const x1 = x * cosAz - y * sinAz;
+            const y1 = x * sinAz + y * cosAz;
+            const z1 = z;
+            
+            const x2 = x1;
+            const y2 = y1 * cosEl - z1 * sinEl;
+            const z2 = y1 * sinEl + z1 * cosEl;
+            
+            return { x: x2, y: y2, z: z2 };
+        }
+
+        // Sequence configurations
+        const sequences = {
+            hahn: {
+                name: "Hahn Echo",
+                angles: [90, 90],
+                flipTimes: [0, 1],
+                rotFuncs: ['rotx', 'rotx'],
+                timeRange: [-0.05, 2],
+                timePoints: 201,
+                zMax: 0.5,
+                noSpins: 150,
+                flipImages: 25,
+                info: "90° pulse along x-axis, followed by 90° pulse along x-axis"
+            },
+            spinecho: {
+                name: "Spin Echo",
+                angles: [90, 180],
+                flipTimes: [0, 1],
+                rotFuncs: ['rotx', 'roty'],
+                timeRange: [-0.05, 3.5],
+                timePoints: 201,
+                zMax: 0.5,
+                noSpins: 200,
+                flipImages: 25,
+                info: "90° pulse along x-axis, followed by 180° pulse along y-axis"
+            },
+            stimulated: {
+                name: "Stimulated Echo",
+                angles: [90, 90, 90],
+                flipTimes: [0, 0.5, 1.5],
+                rotFuncs: ['rotx', 'rotx', 'rotx'],
+                timeRange: [-0.05, 3.5],
+                timePoints: 501,
+                zMax: 5,
+                noSpins: 500,
+                flipImages: 25,
+                info: "Three 90° pulses along x-axis at different time points"
+            },
+            hahn_wide: {
+                name: "Hahn Echo (Wide Dispersion)",
+                angles: [90, 90],
+                flipTimes: [0, 1],
+                rotFuncs: ['rotx', 'rotx'],
+                timeRange: [-0.05, 3.5],
+                timePoints: 501,
+                zMax: 5,
+                noSpins: 1500,
+                flipImages: 25,
+                info: "90° pulse along x-axis, followed by 90° pulse along x-axis (wide frequency dispersion)"
+            },
+            spinecho_wide: {
+                name: "Spin Echo (Wide Dispersion)",
+                angles: [90, 180],
+                flipTimes: [0, 1],
+                rotFuncs: ['rotx', 'roty'],
+                timeRange: [-0.05, 3.5],
+                timePoints: 201,
+                zMax: 5,
+                noSpins: 500,
+                flipImages: 25,
+                info: "90° pulse along x-axis, followed by 180° pulse along y-axis (wide frequency dispersion)"
+            }
+        };
+
+        class SpinEvolution {
+            constructor(opts) {
+                this.angles = opts.angles;
+                this.flipTimes = opts.flipTimes;
+                this.rotFuncs = opts.rotFuncs;
+                this.t = linspace(opts.timeRange[0], opts.timeRange[1], opts.timePoints);
+                this.zMax = opts.zMax;
+                this.zMin = -opts.zMax;
+                this.noSpins = opts.noSpins;
+                this.flipImages = opts.flipImages;
+                
+                this.deltaT = this.t[1] - this.t[0];
+                this.zPerSec = linspace(this.zMin, this.zMax, this.noSpins);
+                this.noFlips = this.flipTimes.length;
+                
+                this.simulate();
+            }
+
+            simulate() {
+                // Initialize magnetization vectors
+                this.M = [];
+                for (let dt = 0; dt < this.t.length; dt++) {
+                    this.M[dt] = [];
+                    for (let i = 0; i < this.noSpins; i++) {
+                        if (dt === 0) {
+                            this.M[dt][i] = [0, 0, 1]; // Initial magnetization along z
+                        } else {
+                            this.M[dt][i] = [0, 0, 0];
+                        }
+                    }
+                }
+
+                // Simulate evolution
+                for (let dt = 1; dt < this.t.length; dt++) {
+                    for (let i = 0; i < this.noSpins; i++) {
+                        // Apply rotation around z-axis (free precession)
+                        const Rz = rotz(this.zPerSec[i] * 360 * this.deltaT);
+                        this.M[dt][i] = matrixVectorMultiply(Rz, this.M[dt-1][i]);
+
+                        // Check for RF pulses
+                        for (let flipIdx = 0; flipIdx < this.noFlips; flipIdx++) {
+                            if (Math.abs(this.t[dt] - this.flipTimes[flipIdx]) < this.deltaT / 2) {
+                                const rotFunc = this.rotFuncs[flipIdx];
+                                let R;
+                                switch (rotFunc) {
+                                    case 'rotx':
+                                        R = rotx(this.angles[flipIdx]);
+                                        break;
+                                    case 'roty':
+                                        R = roty(this.angles[flipIdx]);
+                                        break;
+                                    case 'rotz':
+                                        R = rotz(this.angles[flipIdx]);
+                                        break;
+                                }
+                                this.M[dt][i] = matrixVectorMultiply(R, this.M[dt][i]);
+                            }
+                        }
+
+                        // Normalize to maintain unit length
+                        const mag = Math.sqrt(
+                            this.M[dt][i][0] * this.M[dt][i][0] +
+                            this.M[dt][i][1] * this.M[dt][i][1] +
+                            this.M[dt][i][2] * this.M[dt][i][2]
+                        );
+                        if (mag > 0) {
+                            this.M[dt][i] = this.M[dt][i].map(v => v / mag);
+                        }
+                    }
+                }
+
+                this.createExpandedArrays();
+                this.calculateSignals();
+            }
+
+            createExpandedArrays() {
+                this.newM = JSON.parse(JSON.stringify(this.M));
+                this.newTimeI = [...Array(this.t.length).keys()];
+                this.rfTracking = new Array(this.t.length).fill(0);
+                
+                let addedFrames = 0;
+                for (let dt = 0; dt < this.t.length; dt++) {
+                    for (let flipIdx = 0; flipIdx < this.noFlips; flipIdx++) {
+                        if (Math.abs(this.t[dt] - this.flipTimes[flipIdx]) < this.deltaT / 2) {
+                            const insertIndex = dt + addedFrames;
+                            
+                            // Create gradual rotation frames
+                            const rotFunc = this.rotFuncs[flipIdx];
+                            const angleStep = this.angles[flipIdx] / this.flipImages;
+                            let rotID = 0;
+                            
+                            switch (rotFunc) {
+                                case 'rotx': rotID = 1; break;
+                                case 'roty': rotID = 2; break;
+                                case 'rotz': rotID = 3; break;
+                            }
+                            
+                            // Get the magnetization state BEFORE the RF pulse (from previous time step)
+                            // This is the state after free precession but before RF pulse application
+                            let prePulseMagnetization;
+                            if (dt > 0) {
+                                // Simulate the free precession for this time step without RF pulse
+                                prePulseMagnetization = [];
+                                for (let i = 0; i < this.noSpins; i++) {
+                                    const Rz = rotz(this.zPerSec[i] * 360 * this.deltaT);
+                                    prePulseMagnetization[i] = matrixVectorMultiply(Rz, this.M[dt-1][i]);
+                                }
+                            } else {
+                                // For dt=0, use the initial magnetization
+                                prePulseMagnetization = JSON.parse(JSON.stringify(this.M[dt]));
+                            }
+                            
+                            // Replace the original frame and add gradual rotation frames
+                            for (let j = 0; j < this.flipImages; j++) {
+                                let R;
+                                const currentAngle = angleStep * (j + 1); // Progressive angle
+                                switch (rotFunc) {
+                                    case 'rotx':
+                                        R = rotx(currentAngle);
+                                        break;
+                                    case 'roty':
+                                        R = roty(currentAngle);
+                                        break;
+                                    case 'rotz':
+                                        R = rotz(currentAngle);
+                                        break;
+                                }
+
+                                // Create new frame with progressive rotation from pre-pulse state
+                                const newFrame = [];
+                                for (let i = 0; i < this.noSpins; i++) {
+                                    newFrame[i] = matrixVectorMultiply(R, prePulseMagnetization[i]);
+                                }
+                                
+                                if (j === 0) {
+                                    // Replace the original frame
+                                    this.newM[insertIndex] = newFrame;
+                                    this.rfTracking[insertIndex] = rotID;
+                                } else {
+                                    // Insert additional frames
+                                    this.newM.splice(insertIndex + j, 0, newFrame);
+                                    this.newTimeI.splice(insertIndex + j, 0, dt);
+                                    this.rfTracking.splice(insertIndex + j, 0, rotID);
+                                }
+                            }
+                            
+                            addedFrames += this.flipImages - 1; // -1 because we replaced one frame instead of inserting
+                            break;
+                        }
+                    }
+                }
+            }
+
+            calculateSignals() {
+                this.meanSignalY = [];
+                this.meanSignalX = [];
+                
+                for (let dt = 0; dt < this.M.length; dt++) {
+                    const yValues = this.M[dt].map(m => m[1]);
+                    const xValues = this.M[dt].map(m => m[0]);
+                    this.meanSignalY.push(mean(yValues));
+                    this.meanSignalX.push(mean(xValues));
+                }
+            }
+        }
+
+        class EnhancedCanvas3DRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.updateSize();
+                this.scale = 300;
+                this.azimuth = -25;
+                this.elevation = -40;
+            }
+
+            updateSize() {
+                // Get the display size of the canvas
+                const rect = this.canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                
+                // Set the canvas size in memory (actual resolution)
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                
+                // Scale the context to match device pixel ratio
+                this.ctx.scale(dpr, dpr);
+                
+                // Set the display size
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+                
+                this.width = rect.width;
+                this.height = rect.height;
+                this.centerX = this.width / 2;
+                this.centerY = this.height / 2;
+            }
+
+            setViewParameters(azimuth, elevation, scale) {
+                this.azimuth = azimuth;
+                this.elevation = elevation;
+                this.scale = scale;
+            }
+
+            clear() {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                // Create a subtle gradient background
+                const gradient = this.ctx.createLinearGradient(0, 0, this.width, this.height);
+                gradient.addColorStop(0, '#fafafa');
+                gradient.addColorStop(1, '#f0f0f0');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.width, this.height);
+            }
+
+            drawAxes() {
+                // X axis (black)
+                const xEnd = project3D(1.2, 0, 0, this.azimuth, this.elevation);
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.centerX, this.centerY);
+                this.ctx.lineTo(this.centerX + xEnd.x * this.scale, this.centerY - xEnd.y * this.scale);
+                this.ctx.stroke();
+                
+                // Arrow for X axis
+                this.drawArrowHead(this.centerX + xEnd.x * this.scale, this.centerY - xEnd.y * this.scale, 
+                                 Math.atan2(-xEnd.y, xEnd.x), '#000000');
+                
+                // Y axis (black)
+                const yEnd = project3D(0, 1.2, 0, this.azimuth, this.elevation);
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.centerX, this.centerY);
+                this.ctx.lineTo(this.centerX + yEnd.x * this.scale, this.centerY - yEnd.y * this.scale);
+                this.ctx.stroke();
+                
+                this.drawArrowHead(this.centerX + yEnd.x * this.scale, this.centerY - yEnd.y * this.scale, 
+                                 Math.atan2(-yEnd.y, yEnd.x), '#000000');
+                
+                // Z axis (black)
+                const zEnd = project3D(0, 0, 1.2, this.azimuth, this.elevation);
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.centerX, this.centerY);
+                this.ctx.lineTo(this.centerX + zEnd.x * this.scale, this.centerY - zEnd.y * this.scale);
+                this.ctx.stroke();
+                
+                this.drawArrowHead(this.centerX + zEnd.x * this.scale, this.centerY - zEnd.y * this.scale, 
+                                 Math.atan2(-zEnd.y, zEnd.x), '#000000');
+                
+                // Labels
+                this.ctx.fillStyle = '#333';
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.fillText('X', this.centerX + xEnd.x * this.scale + 15, this.centerY - xEnd.y * this.scale + 5);
+                this.ctx.fillText('Y', this.centerX + yEnd.x * this.scale + 15, this.centerY - yEnd.y * this.scale + 5);
+                this.ctx.fillText('Z', this.centerX + zEnd.x * this.scale + 15, this.centerY - zEnd.y * this.scale + 5);
+            }
+
+            drawArrowHead(x, y, angle, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y);
+                this.ctx.lineTo(x - 10 * Math.cos(angle - 0.3), y - 10 * Math.sin(angle - 0.3));
+                this.ctx.lineTo(x - 10 * Math.cos(angle + 0.3), y - 10 * Math.sin(angle + 0.3));
+                this.ctx.closePath();
+                this.ctx.fill();
+            }
+
+            drawSpins(spins, rfTracking, zPerSec) {
+                // Calculate min and max frequencies for normalization
+                const minFreq = Math.min(...zPerSec);
+                const maxFreq = Math.max(...zPerSec);
+                const freqRange = maxFreq - minFreq;
+                
+                // Create surface patches first (behind the arrows)
+                this.drawSpinSurface(spins, zPerSec, minFreq, maxFreq, freqRange);
+                
+                // Sort spins by z-depth for proper rendering of arrows
+                const spinData = [];
+                for (let i = 0; i < spins.length; i += 3) { // Draw every 3rd spin for better performance
+                    const spin = spins[i];
+                    const proj = project3D(spin[0], spin[1], spin[2], this.azimuth, this.elevation);
+                    spinData.push({ spin, proj, index: i });
+                }
+                
+                // Sort by z-depth (render back to front)
+                spinData.sort((a, b) => a.proj.z - b.proj.z);
+                
+                // Draw spin vectors as lines with arrows
+                spinData.forEach(({ spin, proj, index }) => {
+                    // Color based on precession frequency (faster = red, slower = blue)
+                    if (index < zPerSec.length && freqRange > 0) {
+                        const normalizedFreq = (zPerSec[index] - minFreq) / freqRange;
+                        // Red for fast (high frequency), Blue for slow (low frequency)
+                        const red = Math.round(255 * normalizedFreq);
+                        const blue = Math.round(255 * (1 - normalizedFreq));
+                        
+                        // Vary lightness based on depth for better 3D effect
+                        const lightnessFactor = 0.7 + (proj.z + 1) * 0.15; // Range from 0.7 to 1.0
+                        const adjustedRed = Math.round(red * lightnessFactor);
+                        const adjustedBlue = Math.round(blue * lightnessFactor);
+                        
+                        this.ctx.strokeStyle = `rgb(${adjustedRed}, 0, ${adjustedBlue})`;
+                    } else {
+                        // Fallback to a purple color if frequency data is unavailable
+                        this.ctx.strokeStyle = '#8844cc';
+                    }
+                    this.ctx.lineWidth = 2;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.centerX, this.centerY);
+                    this.ctx.lineTo(
+                        this.centerX + proj.x * this.scale,
+                        this.centerY - proj.y * this.scale
+                    );
+                    this.ctx.stroke();
+                    
+                    // Draw arrowhead
+                    const endX = this.centerX + proj.x * this.scale;
+                    const endY = this.centerY - proj.y * this.scale;
+                    const angle = Math.atan2(-proj.y, proj.x);
+                    
+                    this.ctx.fillStyle = this.ctx.strokeStyle;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(endX, endY);
+                    this.ctx.lineTo(endX - 8 * Math.cos(angle - 0.3), endY - 8 * Math.sin(angle - 0.3));
+                    this.ctx.lineTo(endX - 8 * Math.cos(angle + 0.3), endY - 8 * Math.sin(angle + 0.3));
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                });
+
+                // Draw RF pulse indicator
+                if (rfTracking > 0) {
+                    let arrowPos, arrowColor, axisName;
+                    switch (rfTracking) {
+                        case 1: // X-axis
+                            arrowPos = project3D(1, 0, 0, this.azimuth, this.elevation);
+                            arrowColor = '#ff0000';
+                            axisName = 'X';
+                            break;
+                        case 2: // Y-axis
+                            arrowPos = project3D(0, 1, 0, this.azimuth, this.elevation);
+                            arrowColor = '#00ff00';
+                            axisName = 'Y';
+                            break;
+                        case 3: // Z-axis
+                            arrowPos = project3D(0, 0, 1, this.azimuth, this.elevation);
+                            arrowColor = '#0000ff';
+                            axisName = 'Z';
+                            break;
+                    }
+                    
+                    // Pulsing RF indicator
+                    const pulseIntensity = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
+                    this.ctx.fillStyle = arrowColor;
+                    this.ctx.globalAlpha = pulseIntensity;
+                    this.ctx.beginPath();
+                    this.ctx.arc(
+                        this.centerX + arrowPos.x * this.scale * 1.4,
+                        this.centerY - arrowPos.y * this.scale * 1.4,
+                        20, 0, 2 * Math.PI
+                    );
+                    this.ctx.fill();
+                    
+                    this.ctx.globalAlpha = 1;
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('RF',
+                        this.centerX + arrowPos.x * this.scale * 1.4,
+                        this.centerY - arrowPos.y * this.scale * 1.4 + 4
+                    );
+                    
+                    // RF axis label
+                    this.ctx.fillStyle = arrowColor;
+                    this.ctx.font = 'bold 14px Arial';
+                    this.ctx.fillText(`RF-${axisName}`,
+                        this.centerX + arrowPos.x * this.scale * 1.4,
+                        this.centerY - arrowPos.y * this.scale * 1.4 + 35
+                    );
+                }
+            }
+
+            drawSpinSurface(spins, zPerSec, minFreq, maxFreq, freqRange) {
+                // Create surface patches that follow the actual 3D spin distribution
+                // Similar to MATLAB's approach: create triangles from origin to consecutive spins
+                
+                // Sample fewer spins for surface to improve performance
+                const surfaceSpins = [];
+                for (let i = 0; i < spins.length; i += 4) { // Every 4th spin
+                    const spin = spins[i];
+                    const proj = project3D(spin[0], spin[1], spin[2], this.azimuth, this.elevation);
+                    
+                    // Calculate color based on frequency
+                    let color;
+                    if (i < zPerSec.length && freqRange > 0) {
+                        const normalizedFreq = (zPerSec[i] - minFreq) / freqRange;
+                        const red = Math.round(255 * normalizedFreq);
+                        const blue = Math.round(255 * (1 - normalizedFreq));
+                        const alpha = 0.3; // Semi-transparent surface
+                        color = `rgba(${red}, 0, ${blue}, ${alpha})`;
+                    } else {
+                        color = 'rgba(136, 68, 204, 0.3)'; // fallback purple
+                    }
+                    
+                    surfaceSpins.push({
+                        x: this.centerX + proj.x * this.scale,
+                        y: this.centerY - proj.y * this.scale,
+                        z: proj.z,
+                        color: color,
+                        originalIndex: i
+                    });
+                }
+                
+                // Origin point
+                const origin = {
+                    x: this.centerX,
+                    y: this.centerY,
+                    z: 0
+                };
+                
+                // Create triangular patches connecting consecutive spins through the origin
+                // This follows the MATLAB approach - no forced closure, let the surface be naturally open
+                for (let i = 0; i < surfaceSpins.length - 1; i++) {
+                    const spin1 = surfaceSpins[i];
+                    const spin2 = surfaceSpins[i + 1];
+                    
+                    // Create triangle: origin -> spin1 -> spin2
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(origin.x, origin.y);
+                    this.ctx.lineTo(spin1.x, spin1.y);
+                    this.ctx.lineTo(spin2.x, spin2.y);
+                    this.ctx.closePath();
+                    
+                    // Use the color from the first spin of the triangle
+                    this.ctx.fillStyle = spin1.color;
+                    this.ctx.fill();
+                }
+                
+                // Note: No closure connection - let the surface remain naturally open
+                // This allows the surface to properly represent the frequency distribution
+                // without artificial connections between distant frequency spins
+            }
+
+            render(spins, rfTracking, zPerSec) {
+                this.clear();
+                this.drawAxes();
+                this.drawSpins(spins, rfTracking, zPerSec);
+            }
+        }
+
+        class SignalChart {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.updateSize();
+            }
+
+            updateSize() {
+                // Get the display size of the canvas
+                const rect = this.canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                
+                // Set the canvas size in memory (actual resolution)
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
+                
+                // Scale the context to match device pixel ratio
+                this.ctx.scale(dpr, dpr);
+                
+                // Set the display size
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+                
+                this.width = rect.width;
+                this.height = rect.height;
+            }
+
+            draw(timeData, signalData, currentTime, flipTimes, angles, rotFuncs) {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                const margin = 50;
+                const plotWidth = this.width - 2 * margin;
+                const plotHeight = this.height - 2 * margin;
+                
+                const timeMin = Math.min(...timeData);
+                const timeMax = Math.max(...timeData);
+                const signalMin = -1.1;
+                const signalMax = 1.1;
+                
+                // Grid
+                this.ctx.strokeStyle = '#e0e0e0';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                for (let i = 0; i <= 10; i++) {
+                    const y = margin + (i / 10) * plotHeight;
+                    this.ctx.moveTo(margin, y);
+                    this.ctx.lineTo(margin + plotWidth, y);
+                }
+                for (let i = 0; i <= 10; i++) {
+                    const x = margin + (i / 10) * plotWidth;
+                    this.ctx.moveTo(x, margin);
+                    this.ctx.lineTo(x, margin + plotHeight);
+                }
+                this.ctx.stroke();
+                
+                // Axes
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(margin, margin);
+                this.ctx.lineTo(margin, margin + plotHeight);
+                this.ctx.lineTo(margin + plotWidth, margin + plotHeight);
+                this.ctx.stroke();
+                
+                // Zero line
+                const zeroY = margin + plotHeight - ((0 - signalMin) / (signalMax - signalMin)) * plotHeight;
+                this.ctx.strokeStyle = '#666';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(margin, zeroY);
+                this.ctx.lineTo(margin + plotWidth, zeroY);
+                this.ctx.stroke();
+                
+                // Signal
+                this.ctx.strokeStyle = '#0066cc';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                for (let i = 0; i < timeData.length; i++) {
+                    const x = margin + ((timeData[i] - timeMin) / (timeMax - timeMin)) * plotWidth;
+                    const y = margin + plotHeight - ((signalData[i] - signalMin) / (signalMax - signalMin)) * plotHeight;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+                this.ctx.stroke();
+                
+                // Current time marker
+                const currentX = margin + ((currentTime - timeMin) / (timeMax - timeMin)) * plotWidth;
+                this.ctx.strokeStyle = '#ff0000';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(currentX, margin);
+                this.ctx.lineTo(currentX, margin + plotHeight);
+                this.ctx.stroke();
+                
+                // Flip time markers
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                for (let i = 0; i < flipTimes.length; i++) {
+                    const x = margin + ((flipTimes[i] - timeMin) / (timeMax - timeMin)) * plotWidth;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, margin);
+                    this.ctx.lineTo(x, margin + plotHeight);
+                    this.ctx.stroke();
+                    
+                    // Labels
+                    this.ctx.setLineDash([]);
+                    this.ctx.fillStyle = '#333';
+                    this.ctx.font = '12px Arial';
+                    this.ctx.textAlign = 'center';
+                    const rotAxis = rotFuncs[i].slice(-1);
+                    this.ctx.fillText(`${angles[i]}°${rotAxis}`, x, margin - 10);
+                    this.ctx.setLineDash([5, 5]);
+                }
+                this.ctx.setLineDash([]);
+                
+                // Labels
+                this.ctx.fillStyle = '#000';
+                this.ctx.font = '14px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('Time (s)', this.width / 2, this.height - 10);
+                
+                this.ctx.save();
+                this.ctx.translate(15, this.height / 2);
+                this.ctx.rotate(-Math.PI / 2);
+                this.ctx.fillText('Signal (My)', 0, 0);
+                this.ctx.restore();
+            }
+        }
+
+        class SpinEvolutionApp {
+            constructor() {
+                this.currentSequence = 'hahn';
+                this.simulation = null;
+                this.isPlaying = false;
+                this.currentFrame = 0;
+                this.animationSpeed = 1.0;
+                this.animationId = null;
+                this.manualControl = false;
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.loadSequence();
+            }
+
+            initializeElements() {
+                this.sequenceSelect = document.getElementById('sequenceSelect');
+                this.playBtn = document.getElementById('playBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.speedSlider = document.getElementById('speedSlider');
+                this.azimuthSlider = document.getElementById('azimuthSlider');
+                this.elevationSlider = document.getElementById('elevationSlider');
+                this.zoomSlider = document.getElementById('zoomSlider');
+                this.timelineSlider = document.getElementById('timelineSlider');
+                this.currentSequenceSpan = document.getElementById('currentSequence');
+                this.sequenceInfo = document.getElementById('sequenceInfo');
+                this.currentTimeSpan = document.getElementById('currentTime');
+                this.currentFrameSpan = document.getElementById('currentFrame');
+                this.status = document.getElementById('status');
+                
+                const canvas3d = document.getElementById('canvas3d');
+                this.renderer3d = new EnhancedCanvas3DRenderer(canvas3d);
+                
+                const canvasChart = document.getElementById('signalChart');
+                this.chart = new SignalChart(canvasChart);
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    this.renderer3d.updateSize();
+                    this.chart.updateSize();
+                    this.updateVisualization();
+                });
+                
+                // Initial size update
+                setTimeout(() => {
+                    this.renderer3d.updateSize();
+                    this.chart.updateSize();
+                }, 100);
+            }
+
+            setupEventListeners() {
+                this.sequenceSelect.addEventListener('change', (e) => {
+                    this.currentSequence = e.target.value;
+                    this.loadSequence();
+                });
+
+                this.playBtn.addEventListener('click', () => this.play());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                
+                this.speedSlider.addEventListener('input', (e) => {
+                    this.animationSpeed = parseFloat(e.target.value);
+                });
+
+                // View control sliders
+                this.azimuthSlider.addEventListener('input', (e) => {
+                    this.updateView();
+                });
+
+                this.elevationSlider.addEventListener('input', (e) => {
+                    this.updateView();
+                });
+
+                this.zoomSlider.addEventListener('input', (e) => {
+                    this.updateView();
+                });
+
+                // Timeline slider for manual control
+                this.timelineSlider.addEventListener('input', (e) => {
+                    this.manualControl = true;
+                    this.pause(); // Pause animation when manually controlling
+                    const progress = parseFloat(e.target.value) / 100;
+                    this.currentFrame = Math.floor(progress * (this.simulation ? this.simulation.newM.length - 1 : 0));
+                    this.updateVisualization();
+                    this.updateProgress();
+                });
+
+                this.timelineSlider.addEventListener('mousedown', () => {
+                    this.manualControl = true;
+                });
+
+                this.timelineSlider.addEventListener('mouseup', () => {
+                    // Allow a short delay before auto control can resume
+                    setTimeout(() => {
+                        this.manualControl = false;
+                    }, 100);
+                });
+            }
+
+            updateView() {
+                const azimuth = parseFloat(this.azimuthSlider.value);
+                const elevation = -1.0 * parseFloat(this.elevationSlider.value);
+                const scale = parseFloat(this.zoomSlider.value);
+                
+                this.renderer3d.setViewParameters(azimuth, elevation, scale);
+                this.updateVisualization();
+            }
+
+            loadSequence() {
+                this.pause();
+                this.status.textContent = 'Loading simulation...';
+                
+                setTimeout(() => {
+                    const config = sequences[this.currentSequence];
+                    this.simulation = new SpinEvolution(config);
+                    this.currentFrame = 0;
+                    this.manualControl = false;
+                    
+                    // Reset timeline slider
+                    this.timelineSlider.value = 0;
+                    
+                    this.currentSequenceSpan.textContent = config.name;
+                    this.sequenceInfo.textContent = config.info;
+                    this.status.textContent = 'Simulation loaded. Starting animation...';
+                    
+                    this.updateVisualization();
+                    this.updateProgress();
+                    
+                    // Auto-start the animation
+                    this.play();
+                }, 100);
+            }
+
+            play() {
+                if (this.manualControl) {
+                    this.manualControl = false; // Exit manual control mode
+                }
+                this.isPlaying = true;
+                this.playBtn.disabled = true;
+                this.pauseBtn.disabled = false;
+                this.status.textContent = 'Playing...';
+                this.animate();
+            }
+
+            pause() {
+                this.isPlaying = false;
+                this.playBtn.disabled = false;
+                this.pauseBtn.disabled = true;
+                this.status.textContent = 'Paused.';
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+            }
+
+            reset() {
+                this.pause();
+                this.currentFrame = 0;
+                this.manualControl = false;
+                this.timelineSlider.value = 0;
+                this.status.textContent = 'Reset to beginning.';
+                this.updateVisualization();
+                this.updateProgress();
+            }
+
+            animate() {
+                if (!this.isPlaying || this.manualControl) return;
+                
+                this.currentFrame += this.animationSpeed;
+                if (this.currentFrame >= this.simulation.newM.length) {
+                    this.currentFrame = 0;
+                }
+                
+                this.updateVisualization();
+                this.updateProgress();
+                
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+
+            updateVisualization() {
+                if (!this.simulation) return;
+                
+                const frameIndex = Math.floor(this.currentFrame);
+                const spins = this.simulation.newM[frameIndex];
+                const rfTracking = this.simulation.rfTracking[frameIndex] || 0;
+                const zPerSec = this.simulation.zPerSec;
+                
+                this.renderer3d.render(spins, rfTracking, zPerSec);
+                
+                const timeIndex = this.simulation.newTimeI[frameIndex] || 0;
+                const currentTime = this.simulation.t[timeIndex];
+                this.currentTimeSpan.textContent = currentTime.toFixed(3);
+                this.currentFrameSpan.textContent = frameIndex;
+                
+                this.chart.draw(
+                    this.simulation.t,
+                    this.simulation.meanSignalY,
+                    currentTime,
+                    this.simulation.flipTimes,
+                    this.simulation.angles,
+                    this.simulation.rotFuncs
+                );
+            }
+
+            updateProgress() {
+                const progress = (this.currentFrame / (this.simulation.newM.length - 1)) * 100;
+                
+                // Update timeline slider if not in manual control mode
+                if (!this.manualControl) {
+                    this.timelineSlider.value = progress;
+                }
+            }
+        }
+
+        // Initialize the application when the page loads
+        window.addEventListener('load', () => {
+            new SpinEvolutionApp();
+        });
+    </script>
+</body>
+</html>
