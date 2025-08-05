@@ -142,76 +142,6 @@
                 padding: 12px;
                 font-size: 16px;
             }
-            input[type="range"] {
-                height: 44px;
-                -webkit-appearance: none;
-                appearance: none;
-                background: #e8e8e8;
-                cursor: pointer;
-                width: 100%;
-                border-radius: 22px;
-                border: 2px solid #ccc;
-                outline: none;
-                padding: 0;
-                margin: 0;
-                position: relative;
-            }
-            input[type="range"]::-webkit-slider-track {
-                background: #ddd;
-                height: 10px;
-                border-radius: 5px;
-                border: 1px solid #999;
-                outline: none;
-                box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-                width: 100%;
-            }
-            input[type="range"]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                height: 32px;
-                width: 32px;
-                border-radius: 50%;
-                background: #4CAF50;
-                cursor: pointer;
-                border: 4px solid #fff;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-                margin-top: -13px;
-                position: relative;
-                z-index: 10;
-            }
-            input[type="range"]::-moz-range-track {
-                background: #ddd;
-                height: 10px;
-                border-radius: 5px;
-                border: 1px solid #999;
-                outline: none;
-                box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-                width: 100%;
-            }
-            input[type="range"]::-moz-range-thumb {
-                height: 32px;
-                width: 32px;
-                border-radius: 50%;
-                background: #4CAF50;
-                cursor: pointer;
-                border: 4px solid #fff;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-                margin-top: -13px;
-                position: relative;
-                z-index: 10;
-            }
-            input[type="range"]:focus {
-                outline: none;
-                box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.4);
-            }
-            input[type="range"]:focus::-webkit-slider-track {
-                background: #ccc;
-                border-color: #777;
-            }
-            input[type="range"]:focus::-moz-range-track {
-                background: #ccc;
-                border-color: #777;
-            }
         }
         .info {
             margin-top: 20px;
@@ -950,9 +880,13 @@
             draw(timeData, signalData, currentTime, flipTimes, angles, rotFuncs) {
                 this.ctx.clearRect(0, 0, this.width, this.height);
                 
-                const margin = 50;
+                // Adjust margins and font sizes for mobile
+                const isMobile = window.innerWidth <= 768;
+                const margin = isMobile ? 25 : 50;
                 const plotWidth = this.width - 2 * margin;
                 const plotHeight = this.height - 2 * margin;
+                const fontSize = isMobile ? 8 : 12;
+                const labelFontSize = isMobile ? 9 : 14;
                 
                 const timeMin = Math.min(...timeData);
                 const timeMax = Math.max(...timeData);
@@ -977,7 +911,7 @@
                 
                 // Axes
                 this.ctx.strokeStyle = '#000';
-                this.ctx.lineWidth = 2;
+                this.ctx.lineWidth = isMobile ? 1 : 2;
                 this.ctx.beginPath();
                 this.ctx.moveTo(margin, margin);
                 this.ctx.lineTo(margin, margin + plotHeight);
@@ -995,7 +929,7 @@
                 
                 // Signal
                 this.ctx.strokeStyle = '#0066cc';
-                this.ctx.lineWidth = 2;
+                this.ctx.lineWidth = isMobile ? 1.5 : 2;
                 this.ctx.beginPath();
                 for (let i = 0; i < timeData.length; i++) {
                     const x = margin + ((timeData[i] - timeMin) / (timeMax - timeMin)) * plotWidth;
@@ -1012,7 +946,7 @@
                 // Current time marker
                 const currentX = margin + ((currentTime - timeMin) / (timeMax - timeMin)) * plotWidth;
                 this.ctx.strokeStyle = '#ff0000';
-                this.ctx.lineWidth = 3;
+                this.ctx.lineWidth = isMobile ? 2 : 3;
                 this.ctx.beginPath();
                 this.ctx.moveTo(currentX, margin);
                 this.ctx.lineTo(currentX, margin + plotHeight);
@@ -1020,8 +954,8 @@
                 
                 // Flip time markers
                 this.ctx.strokeStyle = '#333';
-                this.ctx.lineWidth = 2;
-                this.ctx.setLineDash([5, 5]);
+                this.ctx.lineWidth = isMobile ? 1 : 2;
+                this.ctx.setLineDash([3, 3]);
                 for (let i = 0; i < flipTimes.length; i++) {
                     const x = margin + ((flipTimes[i] - timeMin) / (timeMax - timeMin)) * plotWidth;
                     this.ctx.beginPath();
@@ -1029,28 +963,33 @@
                     this.ctx.lineTo(x, margin + plotHeight);
                     this.ctx.stroke();
                     
-                    // Labels
-                    this.ctx.setLineDash([]);
-                    this.ctx.fillStyle = '#333';
-                    this.ctx.font = '12px Arial';
-                    this.ctx.textAlign = 'center';
-                    const rotAxis = rotFuncs[i].slice(-1);
-                    this.ctx.fillText(`${angles[i]}°${rotAxis}`, x, margin - 10);
-                    this.ctx.setLineDash([5, 5]);
+                    // Labels - only show if there's enough space
+                    if (!isMobile || margin > 20) {
+                        this.ctx.setLineDash([]);
+                        this.ctx.fillStyle = '#333';
+                        this.ctx.font = `${fontSize}px Arial`;
+                        this.ctx.textAlign = 'center';
+                        const rotAxis = rotFuncs[i].slice(-1);
+                        const labelText = `${angles[i]}°${rotAxis}`;
+                        this.ctx.fillText(labelText, x, margin - (isMobile ? 5 : 10));
+                        this.ctx.setLineDash([3, 3]);
+                    }
                 }
                 this.ctx.setLineDash([]);
                 
-                // Labels
-                this.ctx.fillStyle = '#000';
-                this.ctx.font = '14px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('Time (s)', this.width / 2, this.height - 10);
-                
-                this.ctx.save();
-                this.ctx.translate(15, this.height / 2);
-                this.ctx.rotate(-Math.PI / 2);
-                this.ctx.fillText('Signal (My)', 0, 0);
-                this.ctx.restore();
+                // Labels - only show main labels on mobile if there's space
+                if (!isMobile || this.height > 100) {
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = `${labelFontSize}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('Time (s)', this.width / 2, this.height - (isMobile ? 5 : 10));
+                    
+                    this.ctx.save();
+                    this.ctx.translate(isMobile ? 8 : 15, this.height / 2);
+                    this.ctx.rotate(-Math.PI / 2);
+                    this.ctx.fillText('Signal (My)', 0, 0);
+                    this.ctx.restore();
+                }
             }
         }
 
@@ -1085,6 +1024,11 @@
                 this.currentFrameSpan = document.getElementById('currentFrame');
                 this.status = document.getElementById('status');
                 
+                // Set different default zoom for mobile
+                const isMobile = window.innerWidth <= 768;
+                const defaultZoom = isMobile ? 100 : 300;
+                this.zoomSlider.value = defaultZoom;
+                
                 const canvas3d = document.getElementById('canvas3d');
                 this.renderer3d = new EnhancedCanvas3DRenderer(canvas3d);
                 
@@ -1102,6 +1046,7 @@
                 setTimeout(() => {
                     this.renderer3d.updateSize();
                     this.chart.updateSize();
+                    this.updateView(); // Apply the default zoom
                 }, 100);
             }
 
